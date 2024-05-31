@@ -168,7 +168,7 @@ pub fn parseArgs(
     var positional_idx: usize = 0;
     const req_positional_count: usize = blk: {
         var count: usize = 0;
-        for (options.positional_descs) |desc| {
+        inline for (options.positional_descs) |desc| {
             if (@typeInfo(desc.value_type) != .Optional) {
                 count += 1;
             }
@@ -205,6 +205,7 @@ pub fn parseArgs(
                     if (desc.value_type != void and name_end == arg.len) {
                         arg_idx += 1;
                     }
+                    break;
                 }
             }
         } else if (arg.len == 2 and arg[0] == '-') {
@@ -221,6 +222,7 @@ pub fn parseArgs(
                     if (desc.value_type != void) {
                         arg_idx += 1;
                     }
+                    break;
                 }
             };
         } else {
@@ -229,13 +231,14 @@ pub fn parseArgs(
                 if (positional_idx == idx) {
                     @field(result.pos, desc.name) = try parseArgumentValue(PositionalDescription, desc.value_type, arg);
                     positional_idx += 1;
+                    break;
                 }
             }
         }
         arg_idx += 1;
     }
 
-    if (positional_idx + 1 != req_positional_count) return error.ExpectedPositional;
+    if (positional_idx != req_positional_count) return error.ExpectedPositional;
 
     return result;
 }
