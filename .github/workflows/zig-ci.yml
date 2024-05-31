@@ -1,0 +1,39 @@
+name: Zig CI
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**/*.zig'
+      - 'build.zig'
+      - 'build.zig.zon'
+  pull_request:
+    paths:
+      - 'src/**/*.zig'
+      - 'build.zig'
+      - 'build.zig.zon'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goto-bus-stop/setup-zig@v2
+      - run: zig build test
+  compile-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goto-bus-stop/setup-zig@v2
+      - run: zig build test -Doptimize=ReleaseSafe
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: goto-bus-stop/setup-zig@v2
+      - run: zig fmt --check src/*.zig
