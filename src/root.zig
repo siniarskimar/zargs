@@ -340,3 +340,7 @@ test "parseArgs" {
         try testing.expectEqualSlices(u8, case.expected.pos.optional.?, args.pos.optional.?);
     }
 }
+
+test {
+    _ = testing.refAllDecls(@This());
+}
