@@ -158,6 +158,7 @@ pub fn parseArgs(
     args: []const []const u8,
     comptime option_descs: []const OptionDescription,
     options: struct {
+        // Already comptime as PositionalDescription has comptime field
         positional_descs: []const PositionalDescription = &[_]PositionalDescription{},
         pause_token: ?[]const u8 = null,
     },
@@ -309,6 +310,19 @@ test "parseArgs" {
     for (cases) |case| {
         const args = try parseArgs(case.args, &option_descs, .{});
         try testing.expectEqual(case.expected, args);
+    }
+
+    {
+        // std.testing.expectEqual for []const u8 tests pointer and
+        // length equality but not content equality
+
+        const args = try parseArgs(
+            &.{ "-s", "never gonna give you up" },
+            &option_descs,
+            .{},
+        );
+        try testing.expect(args.opt.str != null);
+        try testing.expectEqualSlices(u8, "never gonna give you up", args.opt.str.?);
     }
 
     for (positional_cases) |case| {
