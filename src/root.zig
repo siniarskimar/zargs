@@ -239,7 +239,7 @@ pub fn parseArgs(
         arg_idx += 1;
     }
 
-    if (positional_idx != req_positional_count) return error.ExpectedPositional;
+    if (positional_idx < req_positional_count) return error.ExpectedPositional;
 
     return result;
 }
@@ -293,21 +293,24 @@ test "parseArgs" {
             .args = &[_][]const u8{ "-f", "69.420" },
             .expected = .{ .opt = .{ .float = 69.420 } },
         },
-        // .{
-        //     .args = &[_][]const u8{ "-s", "never gonna give you up" },
-        //     .expected = .{ .opt = .{ .str = "never gonna five you up" } },
-        // },
+        .{
+            .args = &[_][]const u8{ "-s", "never gonna give you up" },
+            .expected = .{ .opt = .{ .str = "never gonna give you up" } },
+        },
     };
 
     const positional_cases = [_]struct {
         args: []const []const u8,
         expected: Arguments(&option_descs, &positional_descs),
-    }{.{
+    }{ .{
         .args = &[_][]const u8{"get"},
         .expected = .{ .pos = .{ .command = .get } },
-    }};
+    }, .{
+        .args = &[_][]const u8{ "get", "lucky" },
+        .expected = .{ .pos = .{ .command = .get, .optional = "lucky" } },
+    } };
 
-    for (cases) |case| {
+    for (cases[0 .. cases.len - 1]) |case| {
         const args = try parseArgs(case.args, &option_descs, .{});
         try testing.expectEqual(case.expected, args);
     }
@@ -315,18 +318,25 @@ test "parseArgs" {
     {
         // std.testing.expectEqual for []const u8 tests pointer and
         // length equality but not content equality
+        const case = cases[cases.len - 1 - 0];
 
-        const args = try parseArgs(
-            &.{ "-s", "never gonna give you up" },
-            &option_descs,
-            .{},
-        );
+        const args = try parseArgs(case.args, &option_descs, .{});
         try testing.expect(args.opt.str != null);
-        try testing.expectEqualSlices(u8, "never gonna give you up", args.opt.str.?);
+        try testing.expectEqualSlices(u8, case.expected.opt.str.?, args.opt.str.?);
     }
 
-    for (positional_cases) |case| {
+    for (positional_cases[0 .. positional_cases.len - 1]) |case| {
         const args = try parseArgs(case.args, &option_descs, .{ .positional_descs = &positional_descs });
         try testing.expectEqual(case.expected, args);
+    }
+
+    {
+        // std.testing.expectEqual for []const u8 tests pointer and
+        // length equality but not content equality
+        const case = positional_cases[positional_cases.len - 1 - 0];
+
+        const args = try parseArgs(case.args, &option_descs, .{ .positional_descs = &positional_descs });
+        try testing.expect(args.pos.optional != null);
+        try testing.expectEqualSlices(u8, case.expected.pos.optional.?, args.pos.optional.?);
     }
 }
