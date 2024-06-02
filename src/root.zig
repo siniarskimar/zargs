@@ -56,8 +56,16 @@ pub fn Arguments(
         option_fields[idx] = OptionField(desc);
     }
 
+    var has_optional_positionals = false;
     for (positionals_descs, 0..) |desc, idx| {
         positional_fields[idx] = PositionalField(desc);
+        if (@typeInfo(desc.value_type) == .Optional) {
+            if (has_optional_positionals) {
+                @compileError("All positionals following optional positional must be also optional");
+            } else {
+                has_optional_positionals = true;
+            }
+        }
     }
 
     const OptNamespace = @Type(.{ .Struct = std.builtin.Type.Struct{
