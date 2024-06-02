@@ -360,3 +360,59 @@ test "parseArgs" {
 test {
     _ = testing.refAllDecls(@This());
 }
+
+test "subcommands" {
+    const Command = enum { add, status };
+    const CommandItems = enum { task, issue };
+
+    const pos_descs = comptime [_]PositionalDescription{
+        .{ .name = "command", .value_type = Command },
+    };
+
+    const add_descs = comptime [_]PositionalDescription{
+        .{ .name = "item", .value_type = CommandItems },
+    };
+
+    const status_descs = comptime [_]PositionalDescription{
+        .{ .name = "item", .value_type = ?CommandItems },
+    };
+
+    const positional_cases = [_]struct {
+        args: []const []const u8,
+        expected_main: Arguments(&.{}, &pos_descs),
+        expected_add: Arguments(&.{}, &add_descs),
+        expected_status: Arguments(&.{}, &status_descs),
+    }{ .{
+        .args = &[_][]const u8{ "add", "task" },
+        .expected_main = .{ .pos = .{ .command = Command.add } },
+        .expected_add = .{ .pos = .{ .item = CommandItems.task } },
+        .expected_status = .{},
+    }, .{
+        .args = &[_][]const u8{ "status", "task" },
+        .expected_main = .{ .pos = .{ .command = Command.status } },
+        .expected_add = .{},
+        .expected_status = .{ .pos = .{ .item = CommandItems.task } },
+    }, .{
+        .args = &[_][]const u8{"status"},
+        .expected_main = .{ .pos = .{ .command = Command.status } },
+        .expected_add = .{},
+        .expected_status = .{},
+    } };
+
+    for (positional_cases) |case| {
+        const args = try parseArgs(case.args, &.{}, .{ .positional_descs = &pos_descs });
+
+        try testing.expectEqual(case.expected_main, args);
+
+        switch (args.pos.command) {
+            .add => {
+                const subargs = try parseArgs(case.args[args.last_pos_index + 1 ..], &.{}, .{ .positional_descs = &add_descs });
+                try testing.expectEqual(case.expected_add, subargs);
+            },
+            .status => {
+                const subargs = try parseArgs(case.args[args.last_pos_index + 1 ..], &.{}, .{ .positional_descs = &status_descs });
+                try testing.expectEqual(case.expected_status, subargs);
+            },
+        }
+    }
+}
