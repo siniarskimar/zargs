@@ -6,6 +6,8 @@ pub const OptionDescription = struct {
     short_flag: ?u8 = null,
     value_type: type = void,
     help: ?[]const u8 = null,
+    // TODO: Implement multiple occurences
+    //       .multiple would turn value_type into an array or interpret array value_type
     occurences: enum { single, multiple } = .single,
 };
 
