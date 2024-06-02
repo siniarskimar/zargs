@@ -106,6 +106,13 @@ pub fn Arguments(
                 .is_comptime = false,
                 .alignment = @alignOf(usize),
             },
+            std.builtin.Type.StructField{
+                .name = "last_pos_index",
+                .type = usize,
+                .default_value = &@as(usize, 0),
+                .is_comptime = false,
+                .alignment = @alignOf(usize),
+            },
         },
         .decls = &[_]std.builtin.Type.Declaration{},
         .is_tuple = false,
@@ -239,6 +246,7 @@ pub fn parseArgs(
             inline for (options.positional_descs, 0..) |desc, idx| {
                 if (positional_idx == idx) {
                     @field(result.pos, desc.name) = try parseArgumentValue(PositionalDescription, desc.value_type, arg);
+                    result.last_pos_index = arg_idx;
                     positional_idx += 1;
                     break;
                 }
